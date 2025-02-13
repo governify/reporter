@@ -126,6 +126,13 @@ const atoms = {
     guarantee: '###GUARANTEE.NAME###',
     type: 'gauge',
     datasource: 'InfluxDB',
+    /* El intervalo define la distancia mínima entre dos puntos en la gráfica. 
+    La frecuencia de muestreo se calcula como Time range / max data points, 
+    ajustándose al número máximo de puntos visibles. Por defecto, 
+    este límite (maxDataPoints) es el ancho de la gráfica, pero puede modificarse con maxDataPoints. 
+    Si este valor es muy alto, la frecuencia aumenta, aunque siempre estará limitada por el intervalo mínimo (interval).*/
+    interval: "1h",
+    maxDataPoints: 100000,
     fieldConfig: {
       defaults: {
         custom: {},
@@ -231,6 +238,13 @@ const atoms = {
     guarantee: '###GUARANTEE.NAME###',
     type: 'gauge',
     datasource: 'InfluxDB',
+    /* El intervalo define la distancia mínima entre dos puntos en la gráfica. 
+    La frecuencia de muestreo se calcula como Time range / max data points, 
+    ajustándose al número máximo de puntos visibles. Por defecto, 
+    este límite (maxDataPoints) es el ancho de la gráfica, pero puede modificarse con maxDataPoints. 
+    Si este valor es muy alto, la frecuencia aumenta, aunque siempre estará limitada por el intervalo mínimo (interval).*/
+    interval: "1h",
+    maxDataPoints: 100000,
     fieldConfig: {
       defaults: {
         custom: {},
@@ -331,11 +345,365 @@ const atoms = {
     timeFrom: null,
     timeShift: null
   },
+  gaugeLast5DaysNormalized: {
+    title: 'Mean percentage since the beginning',
+    guarantee: '###GUARANTEE.NAME###',
+    type: 'gauge',
+    datasource: 'InfluxDB',
+    /* El intervalo define la distancia mínima entre dos puntos en la gráfica. 
+    La frecuencia de muestreo se calcula como Time range / max data points, 
+    ajustándose al número máximo de puntos visibles. Por defecto, 
+    este límite (maxDataPoints) es el ancho de la gráfica, pero puede modificarse con maxDataPoints. 
+    Si este valor es muy alto, la frecuencia aumenta, aunque siempre estará limitada por el intervalo mínimo (interval).*/
+    interval: "1h",
+    maxDataPoints: 100000,
+    fieldConfig: {
+      defaults: {
+        custom: {},
+        mappings: [],
+        max: 100,
+        min: 0,
+        noValue: "0",
+        thresholds: {
+          mode: 'absolute',
+          steps: [
+            {
+              color: 'red',
+              value: null
+            },
+            {
+              color: 'yellow',
+              value: 50
+            },
+            {
+              color: 'green',
+              value: 75
+            }
+          ]
+        }
+      },
+      overrides: []
+    },
+    gridPos: {
+      h: 9,
+      w: 4,
+      x: 0,
+      y: 1
+    },
+    id: 2,
+    options: {
+      reduceOptions: {
+        values: false,
+        calcs: [
+          'mean'
+        ],
+        fields: ''
+      },
+      showThresholdLabels: false,
+      showThresholdMarkers: true,
+      text: {},
+      orientation: 'auto'
+    },
+    pluginVersion: '7.0.0',
+    targets: [
+      {
+        groupBy: [
+          {
+            params: [
+              '$__interval'
+            ],
+            type: 'time'
+          },
+          {
+            params: [
+              'null'
+            ],
+            type: 'fill'
+          }
+        ],
+        measurement: 'metrics_values',
+        orderByTime: 'ASC',
+        policy: 'autogen',
+        query: "SELECT count(\"guaranteeValue\") AS \"valid\" FROM \"autogen\".\"metrics_values\" WHERE (\"agreement\" = '###AGREEMENT.ID###' AND \"id\" = '###GUARANTEE.NAME###' AND \"guaranteeValue\" ###GUARANTEE.OPERATOR### ###GUARANTEE.THRESHOLD###) AND time < now() AND time >= now() -500d GROUP BY time($__interval) fill(null)",
+        rawQuery: true,
+        refId: 'A',
+        resultFormat: 'time_series',
+        select: [
+          [
+            {
+              params: [
+                'guaranteeValue'
+              ],
+              type: 'field'
+            },
+            {
+              params: [],
+              type: 'mean'
+            }
+          ]
+        ],
+        tags: [
+          {
+            key: 'agreement',
+            operator: '=',
+            value: '###AGREEMENT.ID###'
+          },
+          {
+            condition: 'AND',
+            key: 'id',
+            operator: '=',
+            value: '###GUARANTEE.NAME###'
+          }
+        ]
+      },
+      {
+        refId: 'B',
+        hide: false,
+        query: "SELECT count(\"guaranteeValue\") AS \"total\" FROM \"autogen\".\"metrics_values\" WHERE (\"agreement\" = '###AGREEMENT.ID###' AND \"id\" = '###GUARANTEE.NAME###') AND time < now() AND time >= now() -500d GROUP BY time($__interval) fill(null)",
+        rawQuery: true
+      }
+    ],
+    transformations: [
+      {
+        id: 'calculateField',
+        options: {
+          mode: 'binary',
+          reduce: {
+            reducer: 'sum'
+          },
+          binary: {
+            left: 'metrics_values.valid',
+            operator: '/',
+            right: 'metrics_values.total',
+            reducer: 'sum'
+          },
+          replaceFields: true
+        }
+      },
+      {
+        id: 'filterByValue',
+        options: {
+          filters: [
+            {
+              fieldName: 'metrics_values.valid / metrics_values.total',
+              config: {
+                id: 'greaterOrEqual',
+                options: {
+                  value: 0
+                }
+              }
+            }
+          ],
+          type: 'include',
+          match: 'all'
+        }
+      },
+      {
+        id: 'calculateField',
+        options: {
+          mode: 'binary',
+          reduce: {
+            reducer: 'step'
+          },
+          binary: {
+            right: '100',
+            left: 'metrics_values.valid / metrics_values.total',
+            operator: '*',
+            reducer: 'sum'
+          },
+          replaceFields: true
+        }
+      }
+    ],
+    transparent: true,
+    timeFrom: null,
+    timeShift: null
+  },
+  gaugeLastPeriodNormalized: {
+    title: 'Period mean percentage',
+    guarantee: '###GUARANTEE.NAME###',
+    type: 'gauge',
+    datasource: 'InfluxDB',
+    /* El intervalo define la distancia mínima entre dos puntos en la gráfica. 
+    La frecuencia de muestreo se calcula como Time range / max data points, 
+    ajustándose al número máximo de puntos visibles. Por defecto, 
+    este límite (maxDataPoints) es el ancho de la gráfica, pero puede modificarse con maxDataPoints. 
+    Si este valor es muy alto, la frecuencia aumenta, aunque siempre estará limitada por el intervalo mínimo (interval).*/
+    interval: "1h",
+    maxDataPoints: 100000,
+    fieldConfig: {
+      defaults: {
+        custom: {},
+        mappings: [],
+        max: 100,
+        min: 0,
+        noValue: "0",
+        thresholds: {
+          mode: 'absolute',
+          steps: [
+            {
+              color: 'red',
+              value: null
+            },
+            {
+              color: 'yellow',
+              value: 50
+            },
+            {
+              color: 'green',
+              value: 75
+            }
+          ]
+        }
+      },
+      overrides: []
+    },
+    gridPos: {
+      h: 9,
+      w: 4,
+      x: 0,
+      y: 1
+    },
+    id: 2,
+    options: {
+      reduceOptions: {
+        values: false,
+        calcs: [
+          'mean'
+        ],
+        fields: ''
+      },
+      showThresholdLabels: false,
+      showThresholdMarkers: true,
+      text: {},
+      orientation: 'auto'
+    },
+    pluginVersion: '7.0.0',
+    targets: [
+      {
+        groupBy: [
+          {
+            params: [
+              '$__interval'
+            ],
+            type: 'time'
+          },
+          {
+            params: [
+              'null'
+            ],
+            type: 'fill'
+          }
+        ],
+        measurement: 'metrics_values',
+        orderByTime: 'ASC',
+        policy: 'autogen',
+        query: "SELECT count(\"guaranteeValue\") AS \"valid\" FROM \"autogen\".\"metrics_values\" WHERE (\"agreement\" = '###AGREEMENT.ID###' AND \"id\" = '###GUARANTEE.NAME###' AND \"guaranteeValue\" ###GUARANTEE.OPERATOR### ###GUARANTEE.THRESHOLD###) AND $timeFilter GROUP BY time($__interval) fill(null)",
+        rawQuery: true,
+        refId: 'A',
+        resultFormat: 'time_series',
+        select: [
+          [
+            {
+              params: [
+                'guaranteeValue'
+              ],
+              type: 'field'
+            },
+            {
+              params: [],
+              type: 'mean'
+            }
+          ]
+        ],
+        tags: [
+          {
+            key: 'agreement',
+            operator: '=',
+            value: '###AGREEMENT.ID###'
+          },
+          {
+            condition: 'AND',
+            key: 'id',
+            operator: '=',
+            value: '###GUARANTEE.NAME###'
+          }
+        ]
+      },
+      {
+        refId: 'B',
+        hide: false,
+        query: "SELECT count(\"guaranteeValue\") AS \"total\" FROM \"autogen\".\"metrics_values\" WHERE (\"agreement\" = '###AGREEMENT.ID###' AND \"id\" = '###GUARANTEE.NAME###') AND $timeFilter GROUP BY time($__interval) fill(null)",
+        rawQuery: true
+      }
+    ],
+    transformations: [
+      {
+        id: 'calculateField',
+        options: {
+          mode: 'binary',
+          reduce: {
+            reducer: 'sum'
+          },
+          binary: {
+            left: 'metrics_values.valid',
+            operator: '/',
+            right: 'metrics_values.total',
+            reducer: 'sum'
+          },
+          replaceFields: true
+        }
+      },
+      {
+        id: 'filterByValue',
+        options: {
+          filters: [
+            {
+              fieldName: 'metrics_values.valid / metrics_values.total',
+              config: {
+                id: 'greaterOrEqual',
+                options: {
+                  value: 0
+                }
+              }
+            }
+          ],
+          type: 'include',
+          match: 'all'
+        }
+      },
+      {
+        id: 'calculateField',
+        options: {
+          mode: 'binary',
+          reduce: {
+            reducer: 'step'
+          },
+          binary: {
+            right: '100',
+            left: 'metrics_values.valid / metrics_values.total',
+            operator: '*',
+            reducer: 'sum'
+          },
+          replaceFields: true
+        }
+      }
+    ],
+    timeFrom: null,
+    timeShift: null
+  },
   gaugeLast5DaysNotZero: {
     title: 'Mean percentage since the beginning',
     guarantee: '###GUARANTEE.NAME###',
     type: 'gauge',
     datasource: 'InfluxDB',
+    /* El intervalo define la distancia mínima entre dos puntos en la gráfica. 
+    La frecuencia de muestreo se calcula como Time range / max data points, 
+    ajustándose al número máximo de puntos visibles. Por defecto, 
+    este límite (maxDataPoints) es el ancho de la gráfica, pero puede modificarse con maxDataPoints. 
+    Si este valor es muy alto, la frecuencia aumenta, aunque siempre estará limitada por el intervalo mínimo (interval).*/
+    interval: "1h",
+    maxDataPoints: 100000,
     fieldConfig: {
       defaults: {
         custom: {},
@@ -442,6 +810,13 @@ const atoms = {
     guarantee: '###GUARANTEE.NAME###',
     type: 'gauge',
     datasource: 'InfluxDB',
+    /* El intervalo define la distancia mínima entre dos puntos en la gráfica. 
+    La frecuencia de muestreo se calcula como Time range / max data points, 
+    ajustándose al número máximo de puntos visibles. Por defecto, 
+    este límite (maxDataPoints) es el ancho de la gráfica, pero puede modificarse con maxDataPoints. 
+    Si este valor es muy alto, la frecuencia aumenta, aunque siempre estará limitada por el intervalo mínimo (interval).*/
+    interval: "1h",
+    maxDataPoints: 100000,
     fieldConfig: {
       defaults: {
         custom: {},
@@ -3154,7 +3529,9 @@ const blocks = {
     },
     panels: [
       addAtom('rowTitle'),
-      addAtom('timeGraphMember')
+      addAtom('gaugeLast5DaysNormalized', 3, 6, 0),
+      addAtom('gaugeLastPeriodNormalized', 4, 9, 3),
+      addAtom('timeGraphMember', 17, 9, 7)
     ]
   },
   'time-graph2-member-notZero': {
@@ -3163,7 +3540,9 @@ const blocks = {
     },
     panels: [
       addAtom('rowTitle'),
-      addAtom('timeGraphMemberNotZero')
+      addAtom('gaugeLast5DaysNotZero', 3, 6, 0),
+      addAtom('gaugeLastPeriodNotZero', 4, 9, 3),
+      addAtom('timeGraphMemberNotZero', 17, 9, 7)
     ]
   },
   'time-graph2-member-groupby': {
@@ -3172,9 +3551,10 @@ const blocks = {
     },
     panels: [
       addAtom('rowTitle'),
-      addAtom('timeGraphMemberGroupBy')
+      addAtom('gaugeLast5DaysNormalized', 3, 6, 0),
+      addAtom('gaugeLastPeriodNormalized', 4, 9, 3),
+      addAtom('timeGraphMemberGroupBy', 17, 9, 7)
     ]
-
   },
   'gauge-time-correlation': {
     config: {
@@ -3324,6 +3704,16 @@ const blocks = {
     panels: [
       addAtom('htmlLinkGithub', 24, 2)
     ]
+  },
+  'mean-gauge-team': {
+    config: {
+      height: 8
+    },
+    panels: [
+      addAtom('rowTitle'),
+      addAtom('gaugeLast5DaysNotZero', 3, 6),
+      addAtom('gaugeLastPeriodNotZero', 4, 9, 3),
+    ]
   }
 };
 
@@ -3387,7 +3777,7 @@ module.exports.default = (jsonDashboard, agreement, dashboardName) => {
       newPanels = JSON.parse(JSON.stringify(newPanels).replace(/"###GUARANTEE.THRESHOLD###"/g, guarantee.of[0].objective.split(' ')[guarantee.of[0].objective.split(' ').length - 1]));
     }
 
-    if (block.type === 'time-graph2-member' || block.type === 'time-graph2-member-notZero' || block.type === 'time-graph2-member-groupby' || block.type === 'time-graph-count' || block.type === 'time-graph-count-groupby' || block.type === 'gauge-period-time-correlation-notZero' || block.type === 'gauge-period-time-correlation-notZero-member') {
+    if (block.type === 'time-graph2-member' || block.type === 'time-graph2-member-notZero' || block.type === 'time-graph2-member-groupby' || block.type === 'time-graph-count' || block.type === 'time-graph-count-groupby' || block.type === 'gauge-period-time-correlation-notZero' || block.type === 'gauge-period-time-correlation-notZero-member' || block.type === 'gaugeLast5DaysNormalized') {
       const regex = /(\([^)]+\)|[a-zA-Z_]+[\w\.\[\]]*(?:\s*\/\s*[a-zA-Z_]+[\w\.\[\]]*)?(?:\s*\*\s*\d+)?|\d+)\s*([<>=]=?|>)\s*(\d+)/;
       const match = guarantee.of[0].objective.match(regex); // Match the objective against the regular expression
       if (!match) throw new Error('Invalid objective format.'); // Check if the objective is in the expected format
@@ -3429,6 +3819,12 @@ module.exports.default = (jsonDashboard, agreement, dashboardName) => {
           newPanels = JSON.parse(JSON.stringify(newPanels).replace(/###TIME_GRAPH.AGGREGATION###/g, block.config['aggregation']));
         }
       }
+
+      if(block.type === 'time-graph2-member' || block.type === 'time-graph2-member-groupby') {
+        newPanels = JSON.parse(JSON.stringify(newPanels).replace(/###GUARANTEE.THRESHOLD###/g, value));
+        newPanels = JSON.parse(JSON.stringify(newPanels).replace(/###GUARANTEE.OPERATOR###/g, operator));
+      }
+      
 
       newPanels = JSON.parse(JSON.stringify(newPanels).replace(/###GUARANTEE.OK_THRESHOLD_SIGN###/g, okThresholdSign));
       newPanels = JSON.parse(JSON.stringify(newPanels).replace(/###GUARANTEE.OK_THRESHOLD_SIGN_LINE###/g, okThresholdSignLine));
