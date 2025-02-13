@@ -1,3 +1,17 @@
+# [2.10.0](https://github.com/governify/reporter/compare/v2.9.6...v2.10.0) (2025-02-13)
+
+
+### Bug Fixes
+
+* update gauges atoms for dashboard ([34c1297](https://github.com/governify/reporter/commit/34c1297c761fd981e6fa64ffbd7a5dbb91281e34))
+
+
+### Features
+
+* env.example ([98c92f5](https://github.com/governify/reporter/commit/98c92f57879daa32d9b43927723796313b194dce))
+
+
+
 ## [2.9.6](https://github.com/governify/reporter/compare/v2.9.5...v2.9.6) (2023-11-08)
 
 
