@@ -2346,6 +2346,155 @@ const atoms = {
       alignLevel: null
     }
   },
+  timeGraphPercentNotZeroWithoutMean: {
+    title: '###TIME_GRAPH.TITLE###',
+    guarantee: '###GUARANTEE.NAME###',
+    type: 'graph',
+    aliasColors: {},
+    bars: false,
+    dashLength: 10,
+    dashes: false,
+    datasource: 'InfluxDB',
+    fieldConfig: {
+      defaults: {
+        custom: {},
+        mappings: [],
+        thresholds: {
+          mode: 'absolute',
+          steps: [
+            {
+              color: 'green',
+              value: null
+            },
+            {
+              color: 'red',
+              value: 80
+            }
+          ]
+        }
+      },
+      overrides: []
+    },
+    fill: 1,
+    fillGradient: 0,
+    gridPos: {
+      h: 9,
+      w: 20,
+      x: 0,
+      y: 1
+    },
+    hiddenSeries: false,
+    id: 4,
+    legend: {
+      avg: false,
+      current: false,
+      max: false,
+      min: false,
+      show: true,
+      total: false,
+      values: false
+    },
+    lines: true,
+    linewidth: 1,
+    nullPointMode: 'connected',
+    options: {
+      dataLinks: []
+    },
+    percentage: false,
+    pluginVersion: '7.0.0',
+    pointradius: 2,
+    points: true,
+    renderer: 'flot',
+    seriesOverrides: [
+      {
+        alias: 'Team',
+        color: '#3274D9'
+      }
+    ],
+    spaceLength: 10,
+    stack: false,
+    steppedLine: false,
+    targets:
+      [
+        {
+          alias: 'Team',
+          groupBy: [],
+          measurement: 'metrics_values',
+          orderByTime: 'ASC',
+          policy: 'autogen',
+          query: "SELECT \"guaranteeValue\" FROM \"autogen\".\"metrics_values\" WHERE (\"agreement\" = '###AGREEMENT.ID###' AND \"id\" = '###GUARANTEE.NAME###' AND \"###METRIC.NOTZERO###\" != 0) AND $timeFilter",
+          rawQuery: true,
+          refId: 'A',
+          resultFormat: 'time_series',
+          select: [
+            [
+              {
+                params: [
+                  'guaranteeValue'
+                ],
+                type: 'field'
+              }
+            ]
+          ],
+          tags: []
+        }
+      ],
+    thresholds: [
+      {
+        "colorMode": "critical",
+        "fill": true,
+        "###LINE_CRITICAL###": "###GUARANTEE.CRITICAL_THRESHOLD_SIGN_LINE###",
+        "op": "###GUARANTEE.CRITICAL_THRESHOLD_SIGN###",
+        "value": '###GUARANTEE.THRESHOLD###',
+        "yaxis": "left"
+      },
+      {
+        "colorMode": "ok",
+        "fill": true,
+        "###LINE_OK###": "###GUARANTEE.OK_THRESHOLD_SIGN_LINE###",
+        "op": "###GUARANTEE.OK_THRESHOLD_SIGN###",
+        "value": '###GUARANTEE.THRESHOLD###',
+        "yaxis": "left"
+      }
+    ],
+    timeFrom: null,
+    timeRegions: [],
+    timeShift: null,
+    tooltip: {
+      shared: true,
+      sort: 0,
+      value_type: 'individual'
+    },
+    xaxis: {
+      buckets: null,
+      mode: 'time',
+      name: null,
+      show: true,
+      values: []
+    },
+    yaxes: [
+      {
+        format: 'short',
+        label: null,
+        logBase: 1,
+        max: '100',
+        min: '0',
+        show: true
+      },
+      {
+        format: 'short',
+        label: null,
+        logBase: 1,
+        max: null,
+        min: null,
+        show: true
+      }
+    ],
+    yaxis: {
+      align: false,
+      alignLevel: null
+    }
+  },
   timeGraphPercentNotZeroMember: {
     title: '###TIME_GRAPH.TITLE###',
     guarantee: '###GUARANTEE.NAME###',
@@ -3715,7 +3864,17 @@ const blocks = {
       addAtom('gaugeLastPeriodNormalized', 4, 9, 3),
       addAtom('timeGraphTeam', 17, 9, 7)
     ]
-
+  },
+  'time-graph-team-not-zero': {
+    config: {
+      height: 8
+    },
+    panels: [
+      addAtom('rowTitle'),
+      addAtom('gaugeLast5DaysNotZero', 3, 6),
+      addAtom('gaugeLastPeriodNotZero', 4, 9, 3),
+      addAtom('timeGraphPercentNotZeroWithoutMean', 17, 9, 7),
+    ]
   },
   'gauge-time-correlation': {
     config: {
@@ -3900,7 +4059,7 @@ module.exports.default = (jsonDashboard, agreement, dashboardName) => {
   Object.entries(dashboardConfig.blocks).sort((a, b) => a[0] - b[0]).forEach(function ([_, block]) {
     var newPanels = [...blocks[block.type].panels];
 
-    if (block.type === 'correlated' || block.type === 'gauge-time-correlation' || block.type === 'gauge-time-correlation-notZero' || block.type === 'gauge-period-time-correlation-notZero' || block.type === 'gauge-period-time-correlation-notZero-member') {
+    if (block.type === 'correlated' || block.type === 'gauge-time-correlation' || block.type === 'gauge-time-correlation-notZero' || block.type === 'gauge-period-time-correlation-notZero' || block.type === 'gauge-period-time-correlation-notZero-member' || block.type === 'time-graph-team-not-zero') {
       newPanels = JSON.parse(JSON.stringify(newPanels).replace(/###METRIC.XAXIS###/g, block.config['x-axis-metric']));
       newPanels = JSON.parse(JSON.stringify(newPanels).replace(/###METRIC.YAXIS###/g, block.config['y-axis-metric']));
       newPanels = JSON.parse(JSON.stringify(newPanels).replace(/###METRIC.NOTZERO###/g, block.config['not-zero-metric']));
@@ -3938,7 +4097,7 @@ module.exports.default = (jsonDashboard, agreement, dashboardName) => {
       newPanels = JSON.parse(JSON.stringify(newPanels).replace(/"###GUARANTEE.THRESHOLD###"/g, guarantee.of[0].objective.split(' ')[guarantee.of[0].objective.split(' ').length - 1]));
     }
 
-    if (block.type === 'time-graph2-member' || block.type === 'time-graph-team' || block.type === 'time-graph2-member-notZero' || block.type === 'time-graph2-member-groupby' || block.type === 'time-graph-count' || block.type === 'time-graph-count-groupby' || block.type === 'gauge-period-time-correlation-notZero' || block.type === 'gauge-period-time-correlation-notZero-member' || block.type === 'gaugeLast5DaysNormalized') {
+    if (block.type === 'time-graph2-member' || block.type === 'time-graph-team' || block.type === 'time-graph2-member-notZero' || block.type === 'time-graph2-member-groupby' || block.type === 'time-graph-count' || block.type === 'time-graph-count-groupby' || block.type === 'gauge-period-time-correlation-notZero' || block.type === 'gauge-period-time-correlation-notZero-member' || block.type === 'gaugeLast5DaysNormalized' || block.type === 'time-graph-team-not-zero') {
       const regex = /(\([^)]+\)|[a-zA-Z_]+[\w\.\[\]]*(?:\s*\/\s*[a-zA-Z_]+[\w\.\[\]]*)?(?:\s*\*\s*\d+)?|\d+)\s*([<>=]=?|>)\s*(\d+)/;
       const match = guarantee.of[0].objective.match(regex); // Match the objective against the regular expression
       if (!match) throw new Error('Invalid objective format.'); // Check if the objective is in the expected format
