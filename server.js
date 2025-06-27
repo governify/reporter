@@ -34,7 +34,7 @@ module.exports = {
  * @param {function} callback callback function
  * @alias module:registry.deploy
  * */
-function _deploy (configurations, commonsMiddleware, callback) {
+function _deploy (configurations, middlewares, callback) {
   const governify = require('governify-commons');
   const config = governify.configurator.getConfig('main');
   // Add this to the VERY top of the first file loaded in your app
@@ -89,7 +89,8 @@ function _deploy (configurations, commonsMiddleware, callback) {
     })
   );
 
-  app.use(commonsMiddleware);
+  for (const middleware of middlewares)
+    app.use(middleware);
 
   const frontendPath = path.join(__dirname, './src/frontend');
   const serverPort = process.env.PORT || config.server.port;

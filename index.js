@@ -1,5 +1,13 @@
 'use strict';
 
+const oasTelemetry = require('@oas-tools/oas-telemetry');
+const YAML = require('yaml');
+const fs = require('fs');
+let oasDoc = fs.readFileSync('./src/backend/api/swaggerV4.yaml', 'utf8');
+oasDoc = YAML.parse(oasDoc);
+
+const oasTelemetryMiddleware = oasTelemetry({ spec: JSON.stringify(oasDoc) });
+
 const governify = require('governify-commons');
 const logger = governify.getLogger().tag('index');
 
@@ -14,7 +22,7 @@ governify.init({
   }]
 }).then(function (commonsMiddleware) {
   server = require('./server');
-  server.deploy(null, commonsMiddleware, function () {
+  server.deploy(null, [commonsMiddleware, oasTelemetryMiddleware], function () {
     logger.info('Deploy successfully done');
   });
 });
