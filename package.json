@@ -6,7 +6,7 @@
   "homepage": "https://github.com/governify/reporter",
   "main": "index.js",
   "dependencies": {
-    "@oas-tools/oas-telemetry": "^0.7.0-alpha.2",
+    "@oas-tools/oas-telemetry": "^0.7.1",
     "bluebird": "^3.5.1",
     "body-parser": "^1.18.2",
     "compression": "^1.7.2",
